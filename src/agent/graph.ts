@@ -1,8 +1,8 @@
 import { StateGraph, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { TavilySearchTool } from "./TavilyTool";
-import type { ResearchState } from "./state";
+import { TavilySearchTool } from "./TavilyTool.js";
+import type { ResearchState } from "./state.js";
 
 // Initialize the model (OpenRouter)
 const openRouterKey = process.env.OPENROUTER_API_KEY;

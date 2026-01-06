@@ -1,5 +1,5 @@
 import { sql } from '@vercel/postgres';
-import type { Report } from '../types';
+import type { Report } from '../types.js';
 
 export async function saveReport(topic: string, content: string, sources: any[] = []) {
     try {

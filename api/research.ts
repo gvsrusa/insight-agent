@@ -1,66 +1,59 @@
-import { agent } from '../src/agent/graph';
-import { saveReport } from '../src/lib/storage';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { agent } from '../src/agent/graph.js';
+import { saveReport } from '../src/lib/storage.js';
 
-export const config = {
-    duration: 60, // allow longer timeout
-};
+// Allow longer timeout (Vercel Pro: 300s, Hobby: 10s-60s)
+export const maxDuration = 60;
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return new Response('Method not allowed', { status: 405 });
+        return res.status(405).send('Method not allowed');
     }
 
-    const { topic } = await req.json();
+    const { topic } = req.body;
 
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-        async start(controller) {
-            let fullReport = "";
-            try {
-                const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-                for await (const event of streamEvents) {
-                    if (event.research) {
-                        const logs = event.research.logs;
-                        const lastLog = logs ? logs[logs.length - 1] : "Researching...";
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`));
-                    }
-                    if (event.write) {
-                        const logs = event.write.logs;
-                        const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`));
+    let fullReport = "";
 
-                        const report = event.write.report;
-                        if (report) {
-                            fullReport = report;
-                            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`));
-                        }
-                    }
-                }
+    try {
+        const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
 
-                // Save to DB (async, might not block stream close but should await ideally)
-                if (fullReport) {
-                    try {
-                        await saveReport(topic, fullReport, []);
-                    } catch (err) {
-                        console.error("Failed to save report to DB", err);
-                    }
-                }
-
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'complete' })}\n\n`));
-                controller.close();
-            } catch (e) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', message: String(e) })}\n\n`));
-                controller.close();
+        for await (const event of streamEvents) {
+            if (event.research) {
+                const logs = event.research.logs;
+                const lastLog = logs ? logs[logs.length - 1] : "Researching...";
+                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
             }
-        },
-    });
+            if (event.write) {
+                const logs = event.write.logs;
+                const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
+                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
 
-    return new Response(stream, {
-        headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-        },
-    });
+                const report = event.write.report;
+                if (report) {
+                    fullReport = report;
+                    res.write(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`);
+                }
+            }
+        }
+
+        // Save to DB
+        if (fullReport) {
+            try {
+                await saveReport(topic, fullReport, []);
+            } catch (err) {
+                console.error("Failed to save report to DB", err);
+            }
+        }
+
+        res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
+        res.end();
+    } catch (e) {
+        console.error(e);
+        res.write(`data: ${JSON.stringify({ type: 'error', message: String(e) })}\n\n`);
+        res.end();
+    }
 }
