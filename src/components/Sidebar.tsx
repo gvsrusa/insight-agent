@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, FileText, X } from 'lucide-react';
+import { Clock, FileText, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import type { Report } from '../types';
 import { cn } from '../lib/utils';
 
@@ -13,6 +13,8 @@ interface SidebarProps {
 export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const fetchReports = async () => {
     try {
@@ -30,10 +32,34 @@ export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
 
   useEffect(() => {
     fetchReports();
-    // Poll every 10s to see new reports
     const interval = setInterval(fetchReports, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  const toggleSelection = (id: number) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} report(s)?`)) return;
+
+    try {
+      await fetch('/api/reports', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) })
+      });
+      setSelectedIds(new Set());
+      setIsSelectionMode(false);
+      fetchReports();
+    } catch (e) {
+      console.error("Failed to delete", e);
+    }
+  };
 
   return (
     <div className={cn("w-80 border-r border-gray-800 bg-gray-950/95 flex flex-col h-full", className)}>
@@ -42,11 +68,32 @@ export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
             <Clock className="w-4 h-4" />
             <span className="text-sm font-medium uppercase tracking-wider">History</span>
         </div>
-        {onClose && (
-            <button onClick={onClose} className="md:hidden p-1 hover:text-white">
-                <X className="w-5 h-5" />
-            </button>
-        )}
+        <div className="flex items-center gap-1">
+            {isSelectionMode ? (
+                <>
+                    <button 
+                        onClick={deleteSelected}
+                        disabled={selectedIds.size === 0}
+                        className="p-1 px-2 text-red-400 hover:bg-red-900/30 rounded text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                        Delete ({selectedIds.size})
+                    </button>
+                    <button onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }} className="p-1 hover:text-white">
+                        <X className="w-4 h-4" />
+                    </button>
+                </>
+            ) : (
+                <button onClick={() => setIsSelectionMode(true)} className="p-1 hover:text-white" title="Manage">
+                   <Trash2 className="w-4 h-4" />
+                </button>
+            )}
+            
+            {onClose && (
+                <button onClick={onClose} className="md:hidden p-1 hover:text-white ml-2">
+                    <X className="w-5 h-5" />
+                </button>
+            )}
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
@@ -57,24 +104,40 @@ export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
         )}
 
         {reports.map((report) => (
-          <button
-            key={report.id}
-            onClick={() => {
-                onSelectReport(report.content);
-                if (onClose) onClose();
-            }}
-            className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors group flex flex-col gap-1"
-          >
-            <div className="flex items-start justify-between gap-2">
-                <span className="text-gray-200 font-medium text-sm line-clamp-2 leading-tight">
-                {report.topic}
+          <div key={report.id} className="relative group">
+              {isSelectionMode && (
+                  <div className="absolute left-2 top-3 z-10" onClick={(e) => { e.stopPropagation(); toggleSelection(report.id as number); }}>
+                      {selectedIds.has(report.id as number) ? 
+                        <CheckSquare className="w-4 h-4 text-blue-500 bg-gray-900" /> : 
+                        <Square className="w-4 h-4 text-gray-500 hover:text-gray-300 bg-gray-900/50" />
+                      }
+                  </div>
+              )}
+              <button
+                onClick={() => {
+                    if (isSelectionMode) toggleSelection(report.id as number);
+                    else {
+                        onSelectReport(report.content);
+                        if (onClose) onClose();
+                    }
+                }}
+                className={cn(
+                    "w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors flex flex-col gap-1",
+                    isSelectionMode ? "pl-8" : "",
+                    selectedIds.has(report.id as number) ? "bg-gray-800/80" : ""
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                    <span className="text-gray-200 font-medium text-sm line-clamp-2 leading-tight">
+                    {report.topic}
+                    </span>
+                    {!isSelectionMode && <FileText className="w-3 h-3 text-gray-600 shrink-0 mt-1" />}
+                </div>
+                <span className="text-xs text-gray-600">
+                  {new Date(report.created_at).toLocaleDateString()}
                 </span>
-                <FileText className="w-3 h-3 text-gray-600 shrink-0 mt-1" />
-            </div>
-            <span className="text-xs text-gray-600">
-              {new Date(report.created_at).toLocaleDateString()}
-            </span>
-          </button>
+              </button>
+          </div>
         ))}
       </div>
     </div>
