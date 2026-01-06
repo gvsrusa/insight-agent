@@ -19,23 +19,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let fullReport = "";
 
     try {
-        const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
+        // Use v2 streaming to get internal events (chunks)
+        const streamEvents = await agent.streamEvents({ topic }, { version: "v2" });
 
         for await (const event of streamEvents) {
-            if (event.research) {
-                const logs = event.research.logs;
-                const lastLog = logs ? logs[logs.length - 1] : "Researching...";
-                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
+            // Status Updates from Node Start events
+            if (event.event === "on_chain_start") {
+                if (event.name === "research") {
+                    res.write(`data: ${JSON.stringify({ type: 'status', message: "Searching the web..." })}\n\n`);
+                } else if (event.name === "write") {
+                    res.write(`data: ${JSON.stringify({ type: 'status', message: "Synthesizing report..." })}\n\n`);
+                }
             }
-            if (event.write) {
-                const logs = event.write.logs;
-                const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
-                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
 
-                const report = event.write.report;
-                if (report) {
-                    fullReport = report;
-                    res.write(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`);
+            // Real-time Content Streaming
+            if (event.event === "on_chat_model_stream") {
+                // Check if this stream event actually contains a chunk with content
+                const chunk = event.data.chunk;
+                if (chunk && chunk.content) {
+                    const content = typeof chunk.content === 'string' ? chunk.content : '';
+                    if (content) {
+                        fullReport += content;
+                        res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
+                    }
                 }
             }
         }
