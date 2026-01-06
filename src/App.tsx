@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useResearch } from './hooks/useResearch';
 import { Github, Loader2, Search, Send, Menu } from 'lucide-react';
@@ -23,6 +23,12 @@ function App() {
       setIsSidebarOpen(false); // Close sidebar on mobile if open
     }
   };
+
+  useEffect(() => {
+     if (status === 'Complete') {
+         setTopic('');
+     }
+  }, [status]);
 
   const handleSelectReport = (content: string) => {
       setSelectedReport(content);
