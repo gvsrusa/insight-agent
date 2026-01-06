@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { useResearch } from './hooks/useResearch';
 import { Github, Loader2, Search, Send, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { ResearchProgress } from './components/ResearchProgress';
+import { ReportRenderer } from './components/ReportRenderer';
 
 function App() {
   const [topic, setTopic] = useState('');
@@ -122,10 +122,13 @@ function App() {
                 {isLoading && !displayReport ? (
                     <ResearchProgress status={status} logs={logs} />
                 ) : displayReport ? (
-                    <div className="prose prose-invert prose-blue max-w-none prose-sm md:prose-base animate-in fade-in duration-500">
-                        <ReactMarkdown>{displayReport}</ReactMarkdown>
-                        {isLoading && (
-                            <span className="inline-block w-2 h-4 ml-1 bg-blue-500 animate-pulse align-middle" />
+                    <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
+                        <ReportRenderer content={displayReport} />
+                         {isLoading && (
+                            <div className="mt-4 animate-pulse text-blue-400 text-sm font-medium flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                                Synthesizing...
+                            </div>
                         )}
                     </div>
                 ) : (

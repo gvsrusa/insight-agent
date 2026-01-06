@@ -60,8 +60,20 @@ async function writeNode(state: ResearchState): Promise<Partial<ResearchState>> 
   Information:
   ${content}
   
-  Write a comprehensive, well-structured markdown report on the topic based on the provided information.
-  Include citations where possible.
+  Write a comprehensive, visually engaging markdown report.
+  structure the report as follows:
+  1. **# Executive Summary**: A high-level overview.
+  2. **> Key Insights**: Use blockquotes (>) for the most important takeaways or surprising path-breaking information. These will be rendered as special insight cards.
+  3. **## Detailed Analysis**: Deep dive into the topic. Use subheaders.
+  4. **Data Comparison**: Use Markdown tables to compare key data points if available.
+  5. **## Conclusion**: Final thoughts.
+  6. **### Sources**: Citations.
+
+  Tone: Professional, authoritative, yet accessible.
+  Format specific instructions:
+  - ALWAYS use blockquotes (>) for key insights.
+  - ALWAYS use tables where comparision is possible.
+  - Use bolding for emphasis.
   `;
 
     const response = await model.invoke([
