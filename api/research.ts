@@ -1,7 +1,8 @@
-import { agent } from '../src/agent/graph.js';
+import { agent } from '../src/agent/graph';
+import { saveReport } from '../src/lib/storage';
 
 export const config = {
-    runtime: 'edge',
+    duration: 60, // allow longer timeout
 };
 
 export default async function handler(req: Request) {
@@ -14,13 +15,11 @@ export default async function handler(req: Request) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
         async start(controller) {
+            let fullReport = "";
             try {
                 const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
 
                 for await (const event of streamEvents) {
-                    // Check for log updates or final report
-                    // event format depends on streamMode
-                    // Simple mapping for demo:
                     if (event.research) {
                         const logs = event.research.logs;
                         const lastLog = logs ? logs[logs.length - 1] : "Researching...";
@@ -28,16 +27,26 @@ export default async function handler(req: Request) {
                     }
                     if (event.write) {
                         const logs = event.write.logs;
-                        const lastLog = logs ? logs[logs.length - 1] : "Values generated.";
+                        const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`));
 
                         const report = event.write.report;
                         if (report) {
-                            // Chunk the report for effect or send whole
+                            fullReport = report;
                             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`));
                         }
                     }
                 }
+
+                // Save to DB (async, might not block stream close but should await ideally)
+                if (fullReport) {
+                    try {
+                        await saveReport(topic, fullReport, []);
+                    } catch (err) {
+                        console.error("Failed to save report to DB", err);
+                    }
+                }
+
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'complete' })}\n\n`));
                 controller.close();
             } catch (e) {
