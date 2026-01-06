@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useResearch } from './hooks/useResearch';
 import { Github, Loader2, Search, Send, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
+import { ResearchProgress } from './components/ResearchProgress';
 
 function App() {
   const [topic, setTopic] = useState('');
@@ -117,15 +118,25 @@ function App() {
             </div>
 
             {/* Report Display */}
-            <div className="flex-1 bg-gray-800/30 rounded-2xl border border-gray-700/50 p-4 md:p-8 overflow-y-auto custom-scrollbar">
-                {displayReport ? (
-                <div className="prose prose-invert prose-blue max-w-none prose-sm md:prose-base">
-                    <ReactMarkdown>{displayReport}</ReactMarkdown>
-                </div>
+            <div className="flex-1 bg-gray-800/30 rounded-2xl border border-gray-700/50 p-4 md:p-8 overflow-y-auto custom-scrollbar relative">
+                {isLoading && !displayReport ? (
+                    <ResearchProgress status={status} logs={logs} />
+                ) : displayReport ? (
+                    <div className="prose prose-invert prose-blue max-w-none prose-sm md:prose-base animate-in fade-in duration-500">
+                        <ReactMarkdown>{displayReport}</ReactMarkdown>
+                        {isLoading && (
+                            <span className="inline-block w-2 h-4 ml-1 bg-blue-500 animate-pulse align-middle" />
+                        )}
+                    </div>
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4 text-center">
-                        <Search className="w-12 h-12 md:w-16 md:h-16 opacity-20" />
-                        <p className="text-sm md:text-base">Enter a topic to generate a comprehensive research report.</p>
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-6 text-center animate-in fade-in zoom-in-95 duration-500 delay-100">
+                        <div className="p-6 bg-gray-800/50 rounded-full ring-1 ring-gray-700/50 shadow-xl">
+                             <Search className="w-10 h-10 md:w-12 md:h-12 text-gray-600" />
+                        </div>
+                        <div className="max-w-xs space-y-2">
+                            <h3 className="text-lg font-medium text-gray-300">Ready to Research</h3>
+                            <p className="text-sm text-gray-500">Enter any topic to launch a comprehensive AI investigation.</p>
+                        </div>
                     </div>
                 )}
             </div>
