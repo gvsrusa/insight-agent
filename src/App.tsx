@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { useResearch } from './hooks/useResearch';
 import { Github, Loader2, Search, Send, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
