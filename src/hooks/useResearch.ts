@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export interface StreamUpdate {
-    type: 'status' | 'text' | 'complete' | 'error';
+    type: 'status' | 'text' | 'chunk' | 'complete' | 'error';
     message?: string;
     content?: string;
     reportId?: string;
@@ -49,7 +49,7 @@ export function useResearch() {
                         if (data.type === 'status') {
                             setStatus(data.message || '');
                             setLogs(prev => [...prev, data.message || '']);
-                        } else if (data.type === 'text') {
+                        } else if (data.type === 'text' || data.type === 'chunk') {
                             setReport(prev => prev + (data.content || ''));
                         } else if (data.type === 'complete') {
                             setIsLoading(false);

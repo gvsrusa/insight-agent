@@ -4,8 +4,9 @@ import dotenv from 'dotenv';
 // Load env vars BEFORE importing the agent graph (which reads process.env)
 dotenv.config();
 
-const { agent } = await import('./src/agent/graph');
-const { saveReport, getReports } = await import('./src/lib/storage');
+// Dynamic imports to ensure env vars are loaded first
+const { agent } = await import('./src/agent/graph.js');
+const { saveReport, getReports } = await import('./src/lib/storage.js');
 
 const app = express();
 app.use(cors());
@@ -26,23 +27,27 @@ app.post('/api/research', async (req, res) => {
     let fullReport = "";
 
     try {
-        const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
+        const streamEvents = await agent.streamEvents({ topic }, { version: "v2" });
 
         for await (const event of streamEvents) {
-            if (event.research) {
-                const logs = event.research.logs;
-                const lastLog = logs ? logs[logs.length - 1] : "Researching...";
-                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
+            // Status Updates from Node Start events
+            if (event.event === "on_chain_start") {
+                if (event.name === "research") {
+                    res.write(`data: ${JSON.stringify({ type: 'status', message: "Searching the web..." })}\n\n`);
+                } else if (event.name === "write") {
+                    res.write(`data: ${JSON.stringify({ type: 'status', message: "Synthesizing report..." })}\n\n`);
+                }
             }
-            if (event.write) {
-                const logs = event.write.logs;
-                const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
-                res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
 
-                const report = event.write.report;
-                if (report) {
-                    fullReport = report;
-                    res.write(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`);
+            // Real-time Content Streaming
+            if (event.event === "on_chat_model_stream") {
+                const chunk = event.data.chunk;
+                if (chunk && chunk.content) {
+                    const content = typeof chunk.content === 'string' ? chunk.content : '';
+                    if (content) {
+                        fullReport += content;
+                        res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
+                    }
                 }
             }
         }
