@@ -5,10 +5,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const { agent } = await import('./src/agent/graph');
+const { saveReport, getReports } = await import('./src/lib/storage');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.get('/api/reports', async (req, res) => {
+    const reports = await getReports();
+    res.json(reports);
+});
 
 app.post('/api/research', async (req, res) => {
     const { topic } = req.body;
@@ -16,6 +22,8 @@ app.post('/api/research', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+
+    let fullReport = "";
 
     try {
         const streamEvents = await agent.stream({ topic }, { streamMode: "updates" });
@@ -28,16 +36,22 @@ app.post('/api/research', async (req, res) => {
             }
             if (event.write) {
                 const logs = event.write.logs;
-                const lastLog = logs ? logs[logs.length - 1] : "Values generated.";
+                const lastLog = logs ? logs[logs.length - 1] : "Finalizing...";
                 res.write(`data: ${JSON.stringify({ type: 'status', message: lastLog })}\n\n`);
 
                 const report = event.write.report;
                 if (report) {
-                    // Send report (could chunk this simulation if needed)
+                    fullReport = report;
                     res.write(`data: ${JSON.stringify({ type: 'text', content: report })}\n\n`);
                 }
             }
         }
+
+        // Save to DB
+        if (fullReport) {
+            await saveReport(topic, fullReport, []);
+        }
+
         res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
         res.end();
     } catch (e) {
