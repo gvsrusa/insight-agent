@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Clock, FileText } from 'lucide-react';
+import { Clock, FileText, X } from 'lucide-react';
 import type { Report } from '../types';
+import { cn } from '../lib/utils';
 
 interface SidebarProps {
   onSelectReport: (content: string) => void;
+  onClose?: () => void;
+  className?: string;
   currentReportId?: number;
 }
 
-export function Sidebar({ onSelectReport }: SidebarProps) {
+export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,10 +36,17 @@ export function Sidebar({ onSelectReport }: SidebarProps) {
   }, []);
 
   return (
-    <div className="w-80 border-r border-gray-800 bg-gray-950/50 flex flex-col h-full">
-      <div className="p-4 border-b border-gray-800 flex items-center gap-2 text-gray-400">
-        <Clock className="w-4 h-4" />
-        <span className="text-sm font-medium uppercase tracking-wider">History</span>
+    <div className={cn("w-80 border-r border-gray-800 bg-gray-950/95 flex flex-col h-full", className)}>
+      <div className="p-4 border-b border-gray-800 flex items-center justify-between text-gray-400">
+        <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium uppercase tracking-wider">History</span>
+        </div>
+        {onClose && (
+            <button onClick={onClose} className="md:hidden p-1 hover:text-white">
+                <X className="w-5 h-5" />
+            </button>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
@@ -49,7 +59,10 @@ export function Sidebar({ onSelectReport }: SidebarProps) {
         {reports.map((report) => (
           <button
             key={report.id}
-            onClick={() => onSelectReport(report.content)}
+            onClick={() => {
+                onSelectReport(report.content);
+                if (onClose) onClose();
+            }}
             className="w-full text-left p-3 rounded-lg hover:bg-gray-800/50 transition-colors group flex flex-col gap-1"
           >
             <div className="flex items-start justify-between gap-2">
