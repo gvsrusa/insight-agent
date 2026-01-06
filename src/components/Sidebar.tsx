@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, FileText, Trash2, X, CheckSquare, Square, MoreVertical, Copy, AlertTriangle } from 'lucide-react';
+import { Clock, Trash2, X, CheckSquare, Square, MoreVertical, Copy, AlertTriangle } from 'lucide-react';
 import type { Report } from '../types';
 import { cn } from '../lib/utils';
 
@@ -169,7 +169,6 @@ export function Sidebar({ onSelectReport, onClose, className, refreshTrigger }: 
                     <span className="text-gray-200 font-medium text-sm line-clamp-2 leading-tight">
                     {report.topic}
                     </span>
-                    {!isSelectionMode && <FileText className="w-3 h-3 text-gray-600 shrink-0 mt-1" />}
                 </div>
                 <span className="text-xs text-gray-600">
                   {new Date(report.created_at).toLocaleDateString()}
@@ -181,7 +180,7 @@ export function Sidebar({ onSelectReport, onClose, className, refreshTrigger }: 
                 <div className="absolute right-2 top-3 z-10" onClick={(e) => e.stopPropagation()}>
                     <button 
                         onClick={() => setOpenMenuId(openMenuId === report.id ? null : report.id as number)}
-                        className="p-1 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded transition-colors opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100"
+                        className="p-1 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
                         data-open={openMenuId === report.id}
                     >
                         <MoreVertical className="w-4 h-4" />
