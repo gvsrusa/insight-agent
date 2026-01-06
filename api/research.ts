@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { agent } from '../src/agent/graph';
-import { saveReport } from '../src/lib/storage';
+import { agent } from '../src/agent/graph.js';
+import { saveReport } from '../src/lib/storage.js';
 
 // Allow longer timeout (Vercel Pro: 300s, Hobby: 10s-60s)
 export const maxDuration = 60;
