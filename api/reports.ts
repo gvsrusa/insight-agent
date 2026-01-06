@@ -1,20 +1,15 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getReports } from '../src/lib/storage';
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'GET') {
-        return new Response('Method not allowed', { status: 405 });
+        return res.status(405).send('Method not allowed');
     }
 
     try {
         const reports = await getReports();
-        return new Response(JSON.stringify(reports), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return res.status(200).json(reports);
     } catch (error) {
-        return new Response(JSON.stringify({ error: 'Failed to fetch reports' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return res.status(500).json({ error: 'Failed to fetch reports' });
     }
 }
