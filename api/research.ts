@@ -1,5 +1,5 @@
-import { agent } from '../src/agent/graph.js';
-import { saveReport } from '../src/lib/storage.js';
+import { agent } from '../src/agent/graph';
+import { saveReport } from '../src/lib/storage';
 
 export const config = {
     duration: 60, // allow longer timeout

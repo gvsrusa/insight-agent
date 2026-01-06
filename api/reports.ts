@@ -1,4 +1,4 @@
-import { getReports } from '../src/lib/storage.js';
+import { getReports } from '../src/lib/storage';
 
 export default async function handler(req: Request) {
     if (req.method !== 'GET') {
