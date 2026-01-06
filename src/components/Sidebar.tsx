@@ -8,9 +8,10 @@ interface SidebarProps {
   onClose?: () => void;
   className?: string;
   currentReportId?: number;
+  refreshTrigger?: number;
 }
 
-export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
+export function Sidebar({ onSelectReport, onClose, className, refreshTrigger }: SidebarProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -35,7 +36,7 @@ export function Sidebar({ onSelectReport, onClose, className }: SidebarProps) {
     fetchReports();
     const interval = setInterval(fetchReports, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshTrigger]);
 
   // Close menus when clicking outside
   useEffect(() => {

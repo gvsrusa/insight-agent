@@ -9,6 +9,7 @@ function App() {
   const [topic, setTopic] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { startResearch, status, report, isLoading, logs } = useResearch();
+  const [lastUpdate, setLastUpdate] = useState(0);
   
   // Local state to override report view when clicking history
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
@@ -28,6 +29,7 @@ function App() {
   useEffect(() => {
      if (status === 'Complete') {
          setTopic('');
+         setLastUpdate(Date.now());
      }
   }, [status]);
 
@@ -72,7 +74,7 @@ function App() {
         
         {/* Sidebar (Desktop) */}
         <div className="hidden md:block h-full shrink-0 z-10">
-            <Sidebar onSelectReport={handleSelectReport} />
+            <Sidebar onSelectReport={handleSelectReport} refreshTrigger={lastUpdate} />
         </div>
 
         {/* Sidebar (Mobile Drawer) */}
@@ -84,6 +86,7 @@ function App() {
                         onSelectReport={handleSelectReport} 
                         onClose={() => setIsSidebarOpen(false)} 
                         className="w-full border-r-0"
+                        refreshTrigger={lastUpdate}
                     />
                 </div>
             </div>
