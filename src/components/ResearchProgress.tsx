@@ -1,6 +1,5 @@
 import { Loader2, Globe, Brain, PenTool } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useMemo } from 'react';
 
 interface ResearchProgressProps {
     status: string;
