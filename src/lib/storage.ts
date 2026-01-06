@@ -26,3 +26,14 @@ export async function getReports(): Promise<Report[]> {
         return [];
     }
 }
+
+export async function deleteReports(ids: number[]) {
+    try {
+        // execute reliable individual deletes
+        await Promise.all(ids.map(id => sql`DELETE FROM reports WHERE id = ${id}`));
+        return true;
+    } catch (error) {
+        console.error('Failed to delete reports:', error);
+        return false;
+    }
+}
