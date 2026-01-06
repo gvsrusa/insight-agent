@@ -34,13 +34,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // Real-time Content Streaming
             if (event.event === "on_chat_model_stream") {
-                // Check if this stream event actually contains a chunk with content
+                // Log first chunk to verify structure in prod
+                if (!fullReport) {
+                    console.log("First chunk event:", JSON.stringify(event));
+                }
+
                 const chunk = event.data.chunk;
                 if (chunk && chunk.content) {
                     const content = typeof chunk.content === 'string' ? chunk.content : '';
                     if (content) {
                         fullReport += content;
                         res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
+                        // @ts-ignore - flush might assume validation
+                        if (typeof res.flush === 'function') res.flush();
                     }
                 }
             }
