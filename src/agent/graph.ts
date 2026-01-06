@@ -15,6 +15,7 @@ const model = new ChatOpenAI({
         baseURL: "https://openrouter.ai/api/v1",
     },
     temperature: 0,
+    streaming: true,
 });
 
 // Initialize Tools
