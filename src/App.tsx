@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useResearch } from './hooks/useResearch';
 import { Github, Loader2, Search, Send, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -9,12 +9,34 @@ function App() {
   const [topic, setTopic] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { startResearch, status, report, isLoading, logs } = useResearch();
+  const [lastUpdate, setLastUpdate] = useState(0);
+  
+  // Refs for smart scrolling
+  const reportContainerRef = useRef<HTMLDivElement>(null);
+  const isUserAtBottomRef = useRef(true);
+
+  // Function to track user scroll position
+  const handleScroll = () => {
+      if (!reportContainerRef.current) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = reportContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px tolerance
+      
+      isUserAtBottomRef.current = isAtBottom;
+  };
   
   // Local state to override report view when clicking history
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
   // Active report is either the one being generated OR the one selected from history
   const displayReport = isLoading ? report : (selectedReport || report);
+
+  // Auto-scroll effect
+  useEffect(() => {
+      if (isLoading && reportContainerRef.current && isUserAtBottomRef.current) {
+          reportContainerRef.current.scrollTop = reportContainerRef.current.scrollHeight;
+      }
+  }, [displayReport, isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +50,7 @@ function App() {
   useEffect(() => {
      if (status === 'Complete') {
          setTopic('');
+         setLastUpdate(Date.now());
      }
   }, [status]);
 
@@ -72,7 +95,7 @@ function App() {
         
         {/* Sidebar (Desktop) */}
         <div className="hidden md:block h-full shrink-0 z-10">
-            <Sidebar onSelectReport={handleSelectReport} />
+            <Sidebar onSelectReport={handleSelectReport} refreshTrigger={lastUpdate} />
         </div>
 
         {/* Sidebar (Mobile Drawer) */}
@@ -84,6 +107,7 @@ function App() {
                         onSelectReport={handleSelectReport} 
                         onClose={() => setIsSidebarOpen(false)} 
                         className="w-full border-r-0"
+                        refreshTrigger={lastUpdate}
                     />
                 </div>
             </div>
@@ -118,7 +142,11 @@ function App() {
             </div>
 
             {/* Report Display */}
-            <div className="flex-1 bg-gray-800/30 rounded-2xl border border-gray-700/50 p-4 md:p-8 overflow-y-auto custom-scrollbar relative">
+            <div 
+                ref={reportContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 bg-gray-800/30 rounded-2xl border border-gray-700/50 p-4 md:p-8 overflow-y-auto custom-scrollbar relative"
+            >
                 {isLoading && !displayReport ? (
                     <ResearchProgress status={status} logs={logs} />
                 ) : displayReport ? (
