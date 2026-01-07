@@ -9,7 +9,7 @@ const openRouterKey = process.env.OPENROUTER_API_KEY;
 if (!openRouterKey) console.warn("OPENROUTER_API_KEY missing");
 
 const model = new ChatOpenAI({
-    modelName: "meta-llama/llama-3.3-70b-instruct:free",
+    modelName: "xiaomi/mimo-v2-flash:free",
     apiKey: openRouterKey, // trying 'apiKey' alias
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
